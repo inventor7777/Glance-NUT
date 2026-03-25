@@ -3,19 +3,30 @@
   url: http://YOUR_BRIDGE_HOST:3494/ups
   cache: 30s
   options:
+    show_charge: true
+    show_runtime: true
+    show_load: true
     show_status: true
     show_input_voltage: true
+    show_battery_voltage: true
     runtime_bar_seconds_max: 600
   template: |
     {{ if ne .Response.StatusCode 200 }}
       <p class="color-negative">Failed to fetch UPS data: {{ .Response.Status }}</p>
     {{ else if and
-      (not (.JSON.Exists "battery.charge"))
-      (not (.JSON.Exists "battery.runtime"))
-      (not (.JSON.Exists "battery.voltage"))
-      (not (.JSON.Exists "ups.status"))
-      (not (.JSON.Exists "input.voltage"))
-      (not (.JSON.Exists "ups.load")) }}
+      (or
+        (.Options.BoolOr "show_charge" true)
+        (.Options.BoolOr "show_runtime" true)
+        (.Options.BoolOr "show_load" true)
+        (.Options.BoolOr "show_status" true)
+        (.Options.BoolOr "show_input_voltage" true)
+        (.Options.BoolOr "show_battery_voltage" true))
+      (or (not (.Options.BoolOr "show_charge" true)) (not (.JSON.Exists "battery.charge")))
+      (or (not (.Options.BoolOr "show_runtime" true)) (not (.JSON.Exists "battery.runtime")))
+      (or (not (.Options.BoolOr "show_battery_voltage" true)) (not (.JSON.Exists "battery.voltage")))
+      (or (not (.Options.BoolOr "show_status" true)) (not (.JSON.Exists "ups.status")))
+      (or (not (.Options.BoolOr "show_input_voltage" true)) (not (.JSON.Exists "input.voltage")))
+      (or (not (.Options.BoolOr "show_load" true)) (not (.JSON.Exists "ups.load"))) }}
       <p class="color-negative">UPS response is missing the expected fields</p>
     {{ else }}
       {{ $status := trimSpace (.JSON.String "ups.status") }}
@@ -56,7 +67,7 @@
             <div class="text-truncate">
               {{ if and (.Options.BoolOr "show_status" true) (ne $status "") }}{{ $status }}{{ end }}
               {{ if and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage") }}{{ if and (.Options.BoolOr "show_status" true) (ne $status "") }} • {{ end }}{{ printf "%.1fV in" (.JSON.Float "input.voltage") }}{{ end }}
-              {{ if .JSON.Exists "battery.voltage" }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) }} • {{ end }}{{ printf "%.1fV batt" (.JSON.Float "battery.voltage") }}{{ end }}
+              {{ if and (.Options.BoolOr "show_battery_voltage" true) (.JSON.Exists "battery.voltage") }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) }} • {{ end }}{{ printf "%.1fV batt" (.JSON.Float "battery.voltage") }}{{ end }}
             </div>
           </div>
           <div class="shrink-0">
@@ -67,6 +78,7 @@
         </div>
 
         <div class="server-stats">
+          {{ if .Options.BoolOr "show_charge" true }}
           <div class="flex-1">
             <div class="flex justify-between items-end size-h5">
               <div>BATT</div>
@@ -84,7 +96,9 @@
               {{ end }}
             </div>
           </div>
+          {{ end }}
 
+          {{ if .Options.BoolOr "show_load" true }}
           <div class="flex-1">
             <div class="flex justify-between items-end size-h5">
               <div>LOAD</div>
@@ -102,7 +116,9 @@
               {{ end }}
             </div>
           </div>
+          {{ end }}
 
+          {{ if .Options.BoolOr "show_runtime" true }}
           <div class="flex-1">
             <div class="flex justify-between items-end size-h5">
               <div>TIME</div>
@@ -129,6 +145,7 @@
               {{ end }}
             </div>
           </div>
+          {{ end }}
         </div>
       </div>
     {{ end }}

@@ -28,3 +28,5 @@ curl http://127.0.0.1:3494/ups
 Edit the placeholder URL in `glance/ups.yml`, then include it in your Glance page config.
 
 If you prefer env-based configuration, the files are still simple to adapt.
+
+*Disclaimer: this is fully vibe-coded by Codex 5.4. However, the code is simple and straightforward, so AI seems fine here.*

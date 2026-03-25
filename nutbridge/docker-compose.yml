@@ -1,0 +1,13 @@
+services:
+  nutbridge:
+    build:
+      context: .
+    container_name: nutbridge
+    restart: unless-stopped
+    ports:
+      - "3494:3494"
+    environment:
+      # UPS name and NUT server IP.
+      NUT_UPS_NAME: YOUR_UPS_NAME@YOUR_NUT_HOST
+      UPSBRIDGE_HOST: 0.0.0.0
+      UPSBRIDGE_PORT: "3494"

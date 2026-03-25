@@ -1,0 +1,134 @@
+- type: custom-api
+  title: UPS
+  url: http://YOUR_BRIDGE_HOST:3494/ups
+  cache: 30s
+  options:
+    show_status: true
+    show_input_voltage: true
+    runtime_bar_seconds_max: 600
+  template: |
+    {{ if ne .Response.StatusCode 200 }}
+      <p class="color-negative">Failed to fetch UPS data: {{ .Response.Status }}</p>
+    {{ else if and
+      (not (.JSON.Exists "battery.charge"))
+      (not (.JSON.Exists "battery.runtime"))
+      (not (.JSON.Exists "battery.voltage"))
+      (not (.JSON.Exists "ups.status"))
+      (not (.JSON.Exists "input.voltage"))
+      (not (.JSON.Exists "ups.load")) }}
+      <p class="color-negative">UPS response is missing the expected fields</p>
+    {{ else }}
+      {{ $status := trimSpace (.JSON.String "ups.status") }}
+      {{ $runtime := 0 }}
+      {{ if .JSON.Exists "battery.runtime" }}
+        {{ $runtime = .JSON.Int "battery.runtime" }}
+      {{ end }}
+      {{ $runtimeHours := div $runtime 3600 }}
+      {{ $runtimeMinutes := div (mod $runtime 3600) 60 }}
+      {{ $runtimeSeconds := mod $runtime 60 }}
+      {{ $isOnline := ne (findMatch "(^| )OL($| )" $status) "" }}
+      {{ $isOnBattery := ne (findMatch "(^| )OB($| )" $status) "" }}
+      {{ $isLowBattery := ne (findMatch "(^| )LB($| )" $status) "" }}
+      {{ $isCharging := ne (findMatch "(^| )CHRG($| )" $status) "" }}
+      {{ $battery := 0 }}
+      {{ if .JSON.Exists "battery.charge" }}
+        {{ $battery = .JSON.Int "battery.charge" }}
+      {{ end }}
+      {{ $load := 0 }}
+      {{ if .JSON.Exists "ups.load" }}
+        {{ $load = .JSON.Int "ups.load" }}
+      {{ end }}
+      {{ $runtimeCap := .Options.IntOr "runtime_bar_seconds_max" 600 }}
+      {{ $runtimePercent := div (mul $runtime 100) $runtimeCap }}
+      {{ $iconColor := "var(--color-text-base)" }}
+      {{ if or $isOnBattery $isLowBattery }}
+        {{ $iconColor = "var(--color-negative)" }}
+      {{ else if or $isOnline $isCharging }}
+        {{ $iconColor = "var(--color-positive)" }}
+      {{ else }}
+        {{ $iconColor = "var(--color-primary)" }}
+      {{ end }}
+
+      <div class="server">
+        <div class="server-info">
+          <div class="server-details">
+            <div class="server-name color-highlight size-h3">{{ if .JSON.Exists "name" }}{{ .JSON.String "name" }}{{ else }}UPS{{ end }}</div>
+            <div class="text-truncate">
+              {{ if and (.Options.BoolOr "show_status" true) (ne $status "") }}{{ $status }}{{ end }}
+              {{ if and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage") }}{{ if and (.Options.BoolOr "show_status" true) (ne $status "") }} • {{ end }}{{ printf "%.1fV in" (.JSON.Float "input.voltage") }}{{ end }}
+              {{ if .JSON.Exists "battery.voltage" }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) }} • {{ end }}{{ printf "%.1fV batt" (.JSON.Float "battery.voltage") }}{{ end }}
+            </div>
+          </div>
+          <div class="shrink-0">
+            <svg class="server-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{{ $iconColor }}">
+              <path d="M11 8.32C11.57 8.7 12 9.35 12 10V15.5L8.5 19V22H3.5V19L0 15.5V10C0 9 1 8 2 8V4H4V8H8V4H10V8C10.35 8 10.7 8.12 11 8.32M7.09 17.59L10 14.67V10.09C10 10.06 9.95 10 9.92 10H2.09C2.06 10 2 10.06 2 10.09V14.67L5.33 18H6.67L7.09 17.59M12 4.04C12.11 4 12.22 4 12.33 4H14V2H20V4H21.67C22.4 4 23 4.6 23 5.33V20.67C23 21 22.86 21.36 22.61 21.61C22.36 21.86 22 22 21.67 22H12.33C11.6 22 11 21.4 11 20.67V19.33L13 17.33V20H21V6H12V4.04Z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="server-stats">
+          <div class="flex-1">
+            <div class="flex justify-between items-end size-h5">
+              <div>BATT</div>
+              <div class="color-highlight text-very-compact">
+                {{ if .JSON.Exists "battery.charge" }}
+                  {{ $battery }} <span class="color-base">%</span>
+                {{ else }}
+                  n/a
+                {{ end }}
+              </div>
+            </div>
+            <div class="progress-bar progress-bar-combined">
+              {{ if .JSON.Exists "battery.charge" }}
+                <div class="progress-value{{ if or (le $battery 20) $isLowBattery }} progress-value-notice{{ end }}" style="--percent: {{ $battery }}"></div>
+              {{ end }}
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <div class="flex justify-between items-end size-h5">
+              <div>LOAD</div>
+              <div class="color-highlight text-very-compact">
+                {{ if .JSON.Exists "ups.load" }}
+                  {{ $load }} <span class="color-base">%</span>
+                {{ else }}
+                  n/a
+                {{ end }}
+              </div>
+            </div>
+            <div class="progress-bar progress-bar-combined">
+              {{ if .JSON.Exists "ups.load" }}
+                <div class="progress-value{{ if ge $load 80 }} progress-value-notice{{ end }}" style="--percent: {{ $load }}"></div>
+              {{ end }}
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <div class="flex justify-between items-end size-h5">
+              <div>TIME</div>
+              <div class="color-highlight text-very-compact">
+                {{ if not (.JSON.Exists "battery.runtime") }}
+                  n/a
+                {{ else if gt $runtimeHours 0 }}
+                  {{ $runtimeHours }}h {{ $runtimeMinutes }}m {{ $runtimeSeconds }}s
+                {{ else if gt $runtimeMinutes 0 }}
+                  {{ $runtimeMinutes }}m {{ $runtimeSeconds }}s
+                {{ else if gt $runtimeSeconds 0 }}
+                  {{ $runtimeSeconds }}s
+                {{ else }}
+                  0s
+                {{ end }}
+              </div>
+            </div>
+            <div class="progress-bar progress-bar-combined">
+              {{ if not (.JSON.Exists "battery.runtime") }}
+              {{ else if ge $runtimePercent 100 }}
+                <div class="progress-value" style="--percent: 100"></div>
+              {{ else }}
+                <div class="progress-value{{ if or $isOnBattery (le $runtime 120) }} progress-value-notice{{ end }}" style="--percent: {{ $runtimePercent }}"></div>
+              {{ end }}
+            </div>
+          </div>
+        </div>
+      </div>
+    {{ end }}

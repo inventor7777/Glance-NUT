@@ -29,4 +29,4 @@ Edit the placeholder URL in `glance/ups.yml`, then include it in your Glance pag
 
 If you prefer env-based configuration, the files are still simple to adapt.
 
-*Disclaimer: this is fully vibe-coded by Codex 5.4. However, the code is simple and straightforward, so AI seems fine here.*
+*Disclaimer: this is fully vibe-coded by Codex 5.4. However, the code is simple and straightforward, so AI seems fine here. If you have any concerns, feel free to contact me, I am a real human :)*

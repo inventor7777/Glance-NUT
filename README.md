@@ -2,6 +2,8 @@
 
 Small NUT-to-HTTP bridge for Glance, plus a matching `custom-api` widget.
 
+![](example.jpeg)
+
 ## Structure
 
 - `nutbridge/`: tiny containerized bridge that reads NUT with `upsc`

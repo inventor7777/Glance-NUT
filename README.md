@@ -1,6 +1,6 @@
 # Glance-NUT
 
-Small NUT-to-HTTP bridge for Glance, plus a matching `custom-api` widget.
+Small NUT-to-HTTP bridge for Glance, plus a matching `custom-api` widget, designed to match the built-in Server Stats widget.
 
 ![](example.jpeg)
 

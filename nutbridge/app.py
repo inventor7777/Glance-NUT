@@ -43,6 +43,13 @@ def to_float(values, key):
         return None
 
 
+def calculate_power_watts(load_percent, nominal_watts):
+    if load_percent is None or nominal_watts is None:
+        return None
+
+    return round((load_percent / 100) * nominal_watts)
+
+
 def read_ups():
     result = subprocess.run(
         ["upsc", UPS_NAME],
@@ -52,6 +59,8 @@ def read_ups():
     )
     values = parse_upsc_output(result.stdout)
     name = values.get("device.model") or UPS_NAME.split("@", 1)[0]
+    load = to_int(values, "ups.load")
+    nominal_watts = to_int(values, "ups.realpower.nominal")
 
     return {
         "name": name,
@@ -62,7 +71,9 @@ def read_ups():
         },
         "ups": {
             "status": values.get("ups.status", ""),
-            "load": to_int(values, "ups.load"),
+            "load": load,
+            "realpower_nominal": nominal_watts,
+            "power": calculate_power_watts(load, nominal_watts),
         },
         "input": {
             "voltage": to_float(values, "input.voltage"),

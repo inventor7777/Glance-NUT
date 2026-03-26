@@ -6,6 +6,7 @@
     show_charge: true
     show_runtime: true
     show_load: true
+    show_watts: true
     show_status: true
     show_input_voltage: true
     show_battery_voltage: true
@@ -18,11 +19,13 @@
         (.Options.BoolOr "show_charge" true)
         (.Options.BoolOr "show_runtime" true)
         (.Options.BoolOr "show_load" true)
+        (.Options.BoolOr "show_watts" true)
         (.Options.BoolOr "show_status" true)
         (.Options.BoolOr "show_input_voltage" true)
         (.Options.BoolOr "show_battery_voltage" true))
       (or (not (.Options.BoolOr "show_charge" true)) (not (.JSON.Exists "battery.charge")))
       (or (not (.Options.BoolOr "show_runtime" true)) (not (.JSON.Exists "battery.runtime")))
+      (or (not (.Options.BoolOr "show_watts" true)) (not (.JSON.Exists "ups.power")))
       (or (not (.Options.BoolOr "show_battery_voltage" true)) (not (.JSON.Exists "battery.voltage")))
       (or (not (.Options.BoolOr "show_status" true)) (not (.JSON.Exists "ups.status")))
       (or (not (.Options.BoolOr "show_input_voltage" true)) (not (.JSON.Exists "input.voltage")))
@@ -68,6 +71,7 @@
               {{ if and (.Options.BoolOr "show_status" true) (ne $status "") }}{{ $status }}{{ end }}
               {{ if and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage") }}{{ if and (.Options.BoolOr "show_status" true) (ne $status "") }} • {{ end }}{{ printf "%.1fV in" (.JSON.Float "input.voltage") }}{{ end }}
               {{ if and (.Options.BoolOr "show_battery_voltage" true) (.JSON.Exists "battery.voltage") }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) }} • {{ end }}{{ printf "%.1fV batt" (.JSON.Float "battery.voltage") }}{{ end }}
+              {{ if and (.Options.BoolOr "show_watts" true) (.JSON.Exists "ups.power") }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) (and (.Options.BoolOr "show_battery_voltage" true) (.JSON.Exists "battery.voltage")) }} • {{ end }}{{ .JSON.Int "ups.power" }}W{{ end }}
             </div>
           </div>
           <div class="shrink-0">
@@ -110,10 +114,30 @@
                 {{ end }}
               </div>
             </div>
+            <div{{ if or (.JSON.Exists "ups.power") (.JSON.Exists "ups.realpower_nominal") }} data-popover-type="html"{{ end }}>
+              {{ if or (.JSON.Exists "ups.power") (.JSON.Exists "ups.realpower_nominal") }}
+              <div data-popover-html>
+                {{ if .JSON.Exists "ups.power" }}
+                <div class="flex">
+                  <div class="size-h5">LOAD</div>
+                  <div class="value-separator"></div>
+                  <div class="color-highlight text-very-compact">{{ .JSON.Int "ups.power" }} <span class="color-base size-h5">W</span></div>
+                </div>
+                {{ end }}
+                {{ if .JSON.Exists "ups.realpower_nominal" }}
+                <div class="flex margin-top-3">
+                  <div class="size-h5">NOMINAL</div>
+                  <div class="value-separator"></div>
+                  <div class="color-highlight text-very-compact">{{ .JSON.Int "ups.realpower_nominal" }} <span class="color-base size-h5">W</span></div>
+                </div>
+                {{ end }}
+              </div>
+              {{ end }}
             <div class="progress-bar progress-bar-combined">
               {{ if .JSON.Exists "ups.load" }}
                 <div class="progress-value{{ if ge $load 80 }} progress-value-notice{{ end }}" style="--percent: {{ $load }}"></div>
               {{ end }}
+            </div>
             </div>
           </div>
           {{ end }}

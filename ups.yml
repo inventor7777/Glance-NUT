@@ -69,9 +69,9 @@
             <div class="server-name color-highlight size-h3">{{ if .JSON.Exists "name" }}{{ .JSON.String "name" }}{{ else }}UPS{{ end }}</div>
             <div class="text-truncate">
               {{ if and (.Options.BoolOr "show_status" true) (ne $status "") }}{{ $status }}{{ end }}
+              {{ if and (.Options.BoolOr "show_watts" true) (.JSON.Exists "ups.power") }}{{ if and (.Options.BoolOr "show_status" true) (ne $status "") }} • {{ end }}{{ .JSON.Int "ups.power" }}W{{ end }}
               {{ if and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage") }}{{ if and (.Options.BoolOr "show_status" true) (ne $status "") }} • {{ end }}{{ printf "%.1fV in" (.JSON.Float "input.voltage") }}{{ end }}
               {{ if and (.Options.BoolOr "show_battery_voltage" true) (.JSON.Exists "battery.voltage") }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) }} • {{ end }}{{ printf "%.1fV batt" (.JSON.Float "battery.voltage") }}{{ end }}
-              {{ if and (.Options.BoolOr "show_watts" true) (.JSON.Exists "ups.power") }}{{ if or (and (.Options.BoolOr "show_status" true) (ne $status "")) (and (.Options.BoolOr "show_input_voltage" true) (.JSON.Exists "input.voltage")) (and (.Options.BoolOr "show_battery_voltage" true) (.JSON.Exists "battery.voltage")) }} • {{ end }}{{ .JSON.Int "ups.power" }}W{{ end }}
             </div>
           </div>
           <div class="shrink-0">

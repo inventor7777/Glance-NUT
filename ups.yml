@@ -10,6 +10,11 @@
     show_status: true
     show_input_voltage: true
     show_battery_voltage: true
+    color_online_charging: "#00C8FF"
+    color_on_battery: "#FF8200"
+    color_low_battery: "var(--color-negative)"
+    color_normal: "var(--color-positive)"
+    color_unknown: "var(--color-primary)"
     runtime_bar_seconds_max: 600
   template: |
     {{ if ne .Response.StatusCode 200 }}
@@ -55,12 +60,21 @@
       {{ $runtimeCap := .Options.IntOr "runtime_bar_seconds_max" 600 }}
       {{ $runtimePercent := div (mul $runtime 100) $runtimeCap }}
       {{ $iconColor := "var(--color-text-base)" }}
-      {{ if or $isOnBattery $isLowBattery }}
-        {{ $iconColor = "var(--color-negative)" }}
+      {{ $colorOnlineCharging := .Options.StringOr "color_online_charging" "#00C8FF" }}
+      {{ $colorOnBattery := .Options.StringOr "color_on_battery" "#FF8200" }}
+      {{ $colorLowBattery := .Options.StringOr "color_low_battery" "var(--color-negative)" }}
+      {{ $colorNormal := .Options.StringOr "color_normal" "var(--color-positive)" }}
+      {{ $colorUnknown := .Options.StringOr "color_unknown" "var(--color-primary)" }}
+      {{ if and $isOnline $isCharging }}
+        {{ $iconColor = $colorOnlineCharging }}
+      {{ else if $isLowBattery }}
+        {{ $iconColor = $colorLowBattery }}
+      {{ else if $isOnBattery }}
+        {{ $iconColor = $colorOnBattery }}
       {{ else if or $isOnline $isCharging }}
-        {{ $iconColor = "var(--color-positive)" }}
+        {{ $iconColor = $colorNormal }}
       {{ else }}
-        {{ $iconColor = "var(--color-primary)" }}
+        {{ $iconColor = $colorUnknown }}
       {{ end }}
 
       <div class="server">
